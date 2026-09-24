@@ -2,6 +2,8 @@
 
 An interactive web map that displays flags at their geographic locations using MapLibre GL and OpenFreeMap.
 
+Hosted at: [https://huntervang.github.io/flag-map/](https://huntervang.github.io/flag-map/)
+
 ## Features
 
 - **Interactive Map**: Pan and zoom around the world to view flags.
