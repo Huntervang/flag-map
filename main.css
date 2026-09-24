@@ -83,7 +83,7 @@ body {
     z-index: 1000;
     display: none;
     box-shadow: 0 8px 20px rgba(0, 0, 0, .4);
-    max-height: calc(100dvh - 250px);
+    max-height: calc(100dvh - 270px);
     overflow-y: auto;
 }
 
