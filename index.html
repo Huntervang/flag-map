@@ -27,7 +27,8 @@
     <script type="module">
         import * as maplibregl from 'https://unpkg.com/maplibre-gl@^6.11.2/dist/maplibre-gl.mjs';
         const flagsResponse = await fetch("https://raw.githubusercontent.com/huntervang/flag-map/refs/heads/main/flags.json");
-        const FLAGS = await flagsResponse.json();
+        const flagsJSON = await flagsResponse.json();
+        const FLAGS = flagsJSON.flags;
         const LAYER_ID = 'flags-layer';
         const SOURCE_ID = 'flags-source';
 
