@@ -17,6 +17,13 @@
             Wikipedia page.</p>
         <input id="search" type="text" placeholder="Search a flag…" autocomplete="off">
         <div id="search-results"></div>
+        
+        <label class="toggle-control">
+            <span class="toggle-label">Show names</span>
+            <input type="checkbox" id="toggle-names">
+            <span class="toggle-switch"></span>
+        </label>
+
         <div id="count">Loading flags…</div>
     </div>
 
@@ -83,10 +90,29 @@
                     'icon-image': ['get', 'code'],
                     'icon-size': 0.6,
                     'icon-allow-overlap': true,
-                    'icon-anchor': 'center'
+                    'icon-anchor': 'center',
+                    'text-offset': [0, 1],
+                    'text-anchor': 'top',
+                    'text-optional': true,
+                    'text-allow-overlap': false,
+                },
+                paint: {
+                    'text-color': '#333333',
+                    'text-halo-color': '#FFFFFF',
+                    'text-halo-width': 2,
+                    'text-halo-blur': 0.5
                 }
             });
 
+            // Handle the name visibility toggle event
+            document.getElementById('toggle-names').addEventListener('change', (e) => {
+                const showNames = e.target.checked;
+                map.setLayoutProperty(
+                    LAYER_ID, 
+                    'text-field', 
+                    showNames ? ['get', 'name'] : ''
+                );
+            });
 
             // Click: popup with bigger flag + Wikipedia link
             map.on('click', LAYER_ID, (e) => {
@@ -112,7 +138,7 @@
 
         function selectAndFlyTo(index) {
             if (index < 0 || index >= currentMatches.length) return;
-            
+
             selectedIndex = index;
             const flag = currentMatches[selectedIndex];
 
