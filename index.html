@@ -88,9 +88,11 @@
 
             // Click: popup with bigger flag + Wikipedia link
             map.on('click', LAYER_ID, (e) => {
-                const p = e.features[0].properties;
+                const feature = e.features[0]
+                const p = feature.properties;
+                const coordinates = feature.geometry.coordinates;
                 new maplibregl.Popup({offset: 14, closeButton: true, maxWidth: '220px'})
-                    .setLngLat(e.lngLat)
+                    .setLngLat(coordinates)
                     .setHTML(`
         <img class="popup-flag" src="${previewUrl(p.code)}" alt="Flag of ${p.name}">
         <div class="popup-name">${p.name}</div>
