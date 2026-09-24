@@ -80,15 +80,11 @@ body {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 8px;
-    
-    overflow: hidden;
     z-index: 1000;
-    
     display: none;
-    
     box-shadow: 0 8px 20px rgba(0, 0, 0, .4);
-    
-    
+    max-height: calc(100dvh - 250px);
+    overflow-y: auto;
 }
 
 .search-result {
