@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flags of the World — Map Explorer</title>
+    <link href="https://unpkg.com/maplibre-gl@^6.11.2/dist/maplibre-gl.css" rel="stylesheet">
+    <link href="https://raw.githubusercontent.com/huntervang/flag-map/refs/heads/main/main.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div id="panel">
+        <h1>🌍 Flags of the World</h1>
+        <p>Every flag is pinned to the map. Click a flag to see it larger with a link to its
+            Wikipedia page.</p>
+        <input id="search" type="text" placeholder="Search a flag…" autocomplete="off">
+        <div id="count">Loading flags…</div>
+    </div>
+
+    <div id="legend">Tiles © <a href="https://openfreemap.org" target="_blank" style="color:inherit">OpenFreeMap</a> /
+        OpenStreetMap contributors</div>
+
+    <div id="map"></div>
+
+    <script type="module">
+        import * as maplibregl from 'https://unpkg.com/maplibre-gl@^6.11.2/dist/maplibre-gl.mjs';
+        const flagsResponse = await fetch("https://raw.githubusercontent.com/huntervang/flag-map/refs/heads/main/flags.json");
+        const FLAGS = await flagsResponse.json();
+        const LAYER_ID = 'flags-layer';
+        const SOURCE_ID = 'flags-source';
+
+        function iconUrl(code) {return `https://flagcdn.com/h40/${code}.png`;}   // small icon for the map layer
+        function previewUrl(code) {return `https://flagcdn.com/w160/${code}.png`;} // bigger image for the popup
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://tiles.openfreemap.org/styles/liberty',
+            center: [10, 25],
+            zoom: 1.6,
+            minZoom: 1,
+            maxZoom: 10
+        });
+
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+        let loaded = 0;
+
+        async function loadIcon(code) {
+            try {
+                const image = await map.loadImage(iconUrl(code))
+                map.addImage(code, image.data);
+                loaded += 1;
+                document.getElementById('count').textContent = `${loaded}/${FLAGS.length} flags loaded`;
+            } catch (e) {
+                console.error(e)
+            }
+        }
+
+        map.on('load', async () => {
+            const results = FLAGS.map(c => loadIcon(c.code));
+
+            const geojson = {
+                type: 'FeatureCollection',
+                features: FLAGS.map(c => ({
+                    type: 'Feature',
+                    geometry: {type: 'Point', coordinates: [c.lon, c.lat]},
+                    properties: {code: c.code, name: c.name, wiki: c.wiki}
+                }))
+            };
+
+            map.addSource(SOURCE_ID, {type: 'geojson', data: geojson, generateId: true});
+
+            map.addLayer({
+                id: LAYER_ID,
+                type: 'symbol',
+                source: SOURCE_ID,
+                layout: {
+                    'icon-image': ['get', 'code'],
+                    'icon-size': 0.6,
+                    'icon-allow-overlap': true,
+                    'icon-anchor': 'center'
+                }
+            });
+
+
+            // Click: popup with bigger flag + Wikipedia link
+            map.on('click', LAYER_ID, (e) => {
+                const p = e.features[0].properties;
+                new maplibregl.Popup({offset: 14, closeButton: true, maxWidth: '220px'})
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+        <img class="popup-flag" src="${previewUrl(p.code)}" alt="Flag of ${p.name}">
+        <div class="popup-name">${p.name}</div>
+        <a class="popup-link" href="${p.wiki}" target="_blank" rel="noopener">View on Wikipedia →</a>
+      `)
+                    .addTo(map);
+            });
+        });
+
+        // Search / filter — uses a map-layer filter expression, not DOM, so it stays fast too
+        const searchInput = document.getElementById('search');
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.trim().toLowerCase();
+
+            if (!map.getLayer(LAYER_ID)) return;
+
+            if (!q) {
+                map.setFilter(LAYER_ID, null);
+                document.getElementById('count').textContent = `${FLAGS.length} flags loaded`;
+                return;
+            }
+
+            map.setFilter(LAYER_ID, ['!=', ['index-of', q, ['downcase', ['get', 'name']]], -1]);
+
+            const matches = FLAGS.filter(c => c.name.toLowerCase().includes(q));
+            document.getElementById('count').textContent = `${matches.length} match${matches.length === 1 ? '' : 'es'}`;
+
+            if (matches.length >= 1 && matches.length <= 5) {
+                map.flyTo({center: [matches[0].lon, matches[0].lat], zoom: 4, speed: 0.8});
+            }
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const q = searchInput.value.trim().toLowerCase();
+            const match = FLAGS.find(c => c.name.toLowerCase().includes(q));
+            if (match) {
+                map.flyTo({center: [match.lon, match.lat], zoom: 5, speed: 1});
+            }
+        });
+    </script>
+</body>
+
+</html>
