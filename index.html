@@ -16,6 +16,7 @@
         <p>Every flag is pinned to the map. Click a flag to see it larger with a link to its
             Wikipedia page.</p>
         <input id="search" type="text" placeholder="Search a flag…" autocomplete="off">
+        <div id="search-results"></div>
         <div id="count">Loading flags…</div>
     </div>
 
@@ -50,12 +51,12 @@
 
         async function loadIcon(code) {
             try {
-                const image = await map.loadImage(iconUrl(code))
+                const image = await map.loadImage(iconUrl(code));
                 map.addImage(code, image.data);
                 loaded += 1;
                 document.getElementById('count').textContent = `${loaded}/${FLAGS.length} flags loaded`;
             } catch (e) {
-                console.error(e)
+                console.error(e);
             }
         }
 
@@ -102,35 +103,139 @@
             });
         });
 
-        // Search / filter — uses a map-layer filter expression, not DOM, so it stays fast too
         const searchInput = document.getElementById('search');
-        searchInput.addEventListener('input', () => {
+        const searchResults = document.getElementById('search-results');
+
+        let currentMatches = [];
+        let selectedIndex = -1;
+
+        function selectAndFlyTo(index) {
+            if (index < 0 || index >= currentMatches.length) return;
+            
+            selectedIndex = index;
+            const flag = currentMatches[selectedIndex];
+
+            map.flyTo({
+                center: [flag.lon, flag.lat],
+                zoom: 5,
+                speed: 5
+            });
+        }
+
+        function showSearchResults(matches) {
+            searchResults.innerHTML = '';
+
+            if (!matches.length) {
+                searchResults.style.display = 'none';
+                selectedIndex = -1;
+                return;
+            }
+
+            matches.forEach((flag, index) => {
+                const result = document.createElement('div');
+                result.className = 'search-result';
+                result.dataset.index = index;
+
+                result.innerHTML = `
+                    <img src="${iconUrl(flag.code)}" alt="">
+                    <span class="search-result-name">${flag.name}</span>
+                `;
+
+                result.addEventListener('click', () => {
+                    selectedIndex = index;
+                    updateSelectedResult();
+                    selectAndFlyTo(index);
+                });
+
+                searchResults.appendChild(result);
+            });
+
+            searchResults.style.display = 'block';
+            updateSelectedResult();
+        }
+
+        function updateSelectedResult() {
+            const results = searchResults.querySelectorAll('.search-result');
+
+            results.forEach((result, index) => {
+                result.classList.toggle('selected', index === selectedIndex);
+            });
+
+            if (selectedIndex >= 0 && results[selectedIndex]) {
+                results[selectedIndex].scrollIntoView({
+                    block: 'nearest'
+                });
+            }
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            currentMatches = [];
+            selectedIndex = -1;
+
+            map.setFilter(LAYER_ID, null);
+            searchResults.style.display = 'none';
+
+            document.getElementById('count').textContent =
+                `${FLAGS.length} flags loaded`;
+        }
+
+        function updateSearch() {
             const q = searchInput.value.trim().toLowerCase();
 
             if (!map.getLayer(LAYER_ID)) return;
 
             if (!q) {
-                map.setFilter(LAYER_ID, null);
-                document.getElementById('count').textContent = `${FLAGS.length} flags loaded`;
+                clearSearch();
                 return;
             }
 
-            map.setFilter(LAYER_ID, ['!=', ['index-of', q, ['downcase', ['get', 'name']]], -1]);
+            currentMatches = FLAGS.filter(flag =>
+                flag.name.toLowerCase().includes(q)
+            );
 
-            const matches = FLAGS.filter(c => c.name.toLowerCase().includes(q));
-            document.getElementById('count').textContent = `${matches.length} match${matches.length === 1 ? '' : 'es'}`;
+            map.setFilter(
+                LAYER_ID,
+                ['!=', ['index-of', q, ['downcase', ['get', 'name']]], -1]
+            );
 
-            if (matches.length >= 1 && matches.length <= 5) {
-                map.flyTo({center: [matches[0].lon, matches[0].lat], zoom: 4, speed: 0.8});
-            }
+            document.getElementById('count').textContent =
+                `${currentMatches.length} match${currentMatches.length === 1 ? '' : 'es'}`;
+
+            showSearchResults(currentMatches);
+        }
+
+        searchInput.addEventListener('input', () => {
+            updateSearch();
+            selectedIndex = 0;
+            updateSelectedResult();
+            selectAndFlyTo(selectedIndex);
         });
+        searchInput.addEventListener('focus', updateSearch);
 
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter') return;
-            const q = searchInput.value.trim().toLowerCase();
-            const match = FLAGS.find(c => c.name.toLowerCase().includes(q));
-            if (match) {
-                map.flyTo({center: [match.lon, match.lat], zoom: 5, speed: 1});
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                clearSearch();
+            }
+
+            if (!currentMatches.length) return;
+
+            if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+                e.preventDefault();
+                searchResults.style.display = 'block';
+                selectedIndex = (selectedIndex + 1) % currentMatches.length;
+                updateSelectedResult();
+                selectAndFlyTo(selectedIndex);
+                return;
+            }
+
+            if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+                e.preventDefault();
+                searchResults.style.display = 'block';
+                selectedIndex = (selectedIndex - 1 + currentMatches.length) % currentMatches.length;
+                updateSelectedResult();
+                selectAndFlyTo(selectedIndex);
+                return;
             }
         });
     </script>
