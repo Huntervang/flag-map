@@ -512,6 +512,34 @@
       "wiki": "https://en.wikipedia.org/wiki/Flag_of_the_United_Kingdom"
     },
     {
+      "code": "gb-eng",
+      "name": "England",
+      "lat": 52.355518,
+      "lon": -1.17432,
+      "wiki": "https://en.wikipedia.org/wiki/Flag_of_England"
+    },
+    {
+      "code": "gb-wls",
+      "name": "Wales",
+      "lat": 52.13066,
+      "lon": -3.783711,
+      "wiki": "https://en.wikipedia.org/wiki/Flag_of_Wales"
+    },
+    {
+      "code": "gb-sct",
+      "name": "Scotland",
+      "lat": 56.490671,
+      "lon": -4.202646,
+      "wiki": "https://en.wikipedia.org/wiki/Flag_of_Scotland"
+    },
+    {
+      "code": "gb-nir",
+      "name": "Northern Ireland",
+      "lat": 54.787714,
+      "lon": -6.492315,
+      "wiki": "https://en.wikipedia.org/wiki/Flag_of_Northern_Ireland"
+    },
+    {
       "code": "gd",
       "name": "Grenada",
       "lat": 12.262776,
